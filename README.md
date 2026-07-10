@@ -1,9 +1,28 @@
-# moonitest — MoonBit Integration Test Framework
+# moonitest — MoonBit 集成测试框架
 
-纯 MoonBit 实现，零外部依赖（除 Docker + curl 运行时）。
+**在 Linux 上为你的 MoonBit 项目拉起真实的数据库容器，跑完自动销毁。**
 
-通过 C FFI 调用 Linux 系统 API（TCP 连接、进程执行、时间），
-无需 Python、Node.js 等外部运行时。
+---
+
+## 为什么需要 moonitest
+
+MoonBit 有 `moon test`，但它只能做纯单元测试。真实项目一定有数据库、缓存、外部 API 依赖——你不可能在生产数据库上跑测试，也不该 mock 掉一切（mock 通过的测试上线一样挂）。
+
+moonitest 的工作方式：
+
+```
+你的 MoonBit 项目
+      │
+      ├── moon test（单元测试，纯逻辑）
+      │
+      └── moonitest（集成测试）
+              │
+              用 Docker 拉起真实的 PostgreSQL/Redis/MySQL
+              等端口就绪 → 跑业务逻辑 → 断言结果
+              测试结束 → 自动销毁容器
+```
+
+---
 
 ## 安装
 
@@ -11,36 +30,305 @@
 moon add moonitest/moonitest
 ```
 
-## 快速使用
+## 快速开始
+
+### 场景：测试你的 MoonBit 项目需要 PostgreSQL
 
 ```mbt
-// 启动 PostgreSQL 测试容器
-let pg = DockerContainer::new("postgres:16-alpine")
-  .with_port(15432, 5432)
-  .with_env("POSTGRES_USER", "test")
+// test/integration_test.mbt
+test "user repository integration" {
+  // 1. 配置容器
+  let pg = DockerContainer::new("postgres:16-alpine")
+    .with_port(15432, 5432)
+    .with_env("POSTGRES_USER", "myapp")
+    .with_env("POSTGRES_PASSWORD", "secret")
+    .with_env("POSTGRES_DB", "mydb")
 
-match pg.start() {
-  Ok(id) => {
-    let _ = wait_for_port("localhost", 15432, 30000)
-    // ... run tests against localhost:15432 ...
-    let _ = stop(id)
+  // 2. 启动
+  match pg.start() {
+    Ok(id) => {
+      // 3. 等待就绪（最多等 30 秒）
+      match wait_for_port("localhost", 15432, 30000) {
+        Ok(_) => {
+          // 4. 你的测试逻辑：连上 localhost:15432 跑业务
+          println("pg ready at postgresql://myapp:secret@localhost:15432/mydb")
+          // 这里调用你的 MoonBit 模块做 CRUD
+        }
+        Err(e) => println("pg not ready: " + e)
+      }
+      // 5. 自动清理
+      let _ = stop(id)
+    }
+    Err(e) => println("start failed: " + e)
   }
-  Err(e) => println("docker unavailable: " + e)
 }
 ```
 
-## API
+### 场景：测试依赖 Redis 缓存的功能
+
+```mbt
+test "redis cache integration" {
+  let port = 16379
+  let r = DockerContainer::new("redis:7-alpine")
+    .with_port(port, 6379)
+
+  match r.start() {
+    Ok(id) => {
+      match wait_for_port("localhost", port, 15000) {
+        Ok(_) => {
+          println("redis ready at localhost:" + port.to_string())
+          // 连上 Redis 测试你的缓存逻辑
+        }
+        Err(e) => println("redis timeout: " + e)
+      }
+      let _ = stop(id)
+    }
+    Err(e) => println("docker unavailable: " + e)
+  }
+}
+```
+
+### 场景：多容器一起上（PG + Redis）
+
+```mbt
+test "multi-container integration" {
+  let pg = DockerContainer::new("postgres:16-alpine")
+    .with_port(15432, 5432)
+  let redis = DockerContainer::new("redis:7-alpine")
+    .with_port(16379, 6379)
+
+  let pg_id = match pg.start() {
+    Ok(id) => { let _ = wait_for_port("localhost", 15432, 30000); id }
+    Err(e) => { println("pg: " + e); return }
+  }
+  let redis_id = match redis.start() {
+    Ok(id) => { let _ = wait_for_port("localhost", 16379, 15000); id }
+    Err(e) => { println("redis: " + e); return }
+  }
+
+  // 两个容器都在跑了，写你的集成测试
+  println("both containers ready")
+
+  let _ = stop(pg_id)
+  let _ = stop(redis_id)
+}
+```
+
+---
+
+## API 参考
+
+### DockerContainer — 容器配置与生命周期
+
+| 方法 | 说明 |
+|------|------|
+| `DockerContainer::new(image: String)` | 指定 Docker 镜像名 |
+| `.with_port(host: Int, container: Int)` | 映射宿主机端口 → 容器端口 |
+| `.with_env(key: String, value: String)` | 设置环境变量 |
+| `.with_cmd(cmd: Array[String])` | 覆盖容器入口命令 |
+| `.start() -> Result[String, String]` | 创建并启动容器，返回容器 ID |
+| `stop(id: String) -> Result[Unit, String]` | 停止并删除容器 |
+
+### 等待策略
 
 | 函数 | 说明 |
 |------|------|
-| `DockerContainer::new(image)` | 创建容器配置 |
-| `.with_port(host, container)` | 端口映射 |
-| `.with_env(key, value)` | 环境变量 |
-| `.start()` / `stop(id)` | 容器启停 |
-| `wait_for_port(host, port, ms)` | TCP 端口等待 |
-| `wait_for_http(url, ms)` | HTTP 健康检查 |
-| `find_free_port()` | 找空闲端口 |
-| `http_get(url)` / `http_post(url, body)` | HTTP 辅助 |
+| `wait_for_port(host, port, timeout_ms)` | 等待 TCP 端口开放 |
+| `wait_for_http(url, timeout_ms)` | 等待 HTTP GET 返回 200 |
+
+### HTTP 辅助
+
+| 函数 | 说明 |
+|------|------|
+| `http_get(url) -> Result[String, String]` | HTTP GET，返回响应体 |
+| `http_post(url, body) -> Result[String, String]` | HTTP POST |
+
+### 网络工具
+
+| 函数 | 说明 |
+|------|------|
+| `find_free_port() -> Result[Int, String]` | 找空闲端口，避免冲突 |
+
+### 预设容器
+
+| 函数 | 镜像 | 默认端口 | 预设 |
+|------|------|---------|------|
+| `postgres_container(port)` | postgres:16-alpine | 5432 | test_user / test_pass / test_db |
+| `redis_container(port)` | redis:7-alpine | 6379 | 无认证 |
+| `mysql_container(port)` | mysql:8.0 | 3306 | test_user / test_pass / test_db |
+
+```mbt
+// 直接用预设，不用手动配环境变量
+let pg = postgres_container(15432)
+let conn_str = postgres_connection_string("localhost", 15432)
+// → "postgresql://test_user:test_pass@localhost:15432/test_db"
+```
+
+---
+
+## 集成到 MoonBit 项目的工作流
+
+### 标准目录结构
+
+```
+your-moonbit-project/
+├── moon.mod                    # 你的项目
+├── moon.pkg
+├── src/
+│   └── lib.mbt                 # 你的业务代码
+├── test/
+│   └── integration_test.mbt    # 集成测试（用 moonitest）
+└── README.md
+```
+
+### 添加依赖
+
+```bash
+moon add moonitest/moonitest
+```
+
+### 编写集成测试
+
+在 `test/` 目录下创建 `*_test.mbt` 文件：
+
+```mbt
+// test/user_repo_test.mbt
+test "user repository with real postgres" {
+  let port = 15432
+  let pg = DockerContainer::new("postgres:16-alpine")
+    .with_port(port, 5432)
+    .with_env("POSTGRES_USER", "test")
+    .with_env("POSTGRES_DB", "testdb")
+
+  match pg.start() {
+    Ok(id) => {
+      match wait_for_port("localhost", port, 30000) {
+        Ok(_) => {
+          // 这里调用你的 repo 层
+          // let repo = UserRepo::new("localhost", port)
+          // let user = repo.create("alice@example.com")
+          // assert_eq(user.email, "alice@example.com")
+        }
+        Err(e) => println("timeout: " + e)
+      }
+      let _ = stop(id)
+    }
+    Err(e) => println("no docker: " + e)
+  }
+}
+```
+
+### 运行
+
+```bash
+# 1. 类型检查
+moon check
+
+# 2. 构建 native 目标
+moon build --target native
+
+# 3. 跑全部测试（单元 + 集成）
+moon test
+
+# 4. 单独跑某个集成测试
+moon test -- --name "postgres"
+```
+
+---
+
+## 调试技巧
+
+### 1. 容器没起来？查 Docker 日志
+
+```mbt
+// 先把 stop 注释掉，容器留着手动排查
+test "debug postgres" {
+  let pg = postgres_container(15432)
+  match pg.start() {
+    Ok(id) => {
+      println("container: " + id)
+      println("docker logs " + id)
+      // 在另一个终端: docker logs -f <id>
+    }
+    Err(e) => println("error: " + e)
+  }
+  // 不要 stop，跑完手动 inspect
+}
+```
+
+### 2. 端口冲突
+
+```mbt
+// 用 find_free_port 替代硬编码端口
+let port = match find_free_port() {
+  Ok(p) => p
+  Err(_) => 15432  // fallback
+}
+```
+
+### 3. 超时处理
+
+数据库首次启动可能较慢，根据镜像大小调整超时：
+
+| 镜像 | 建议超时 |
+|------|---------|
+| redis:7-alpine | 15 秒 |
+| postgres:16-alpine | 30 秒 |
+| mysql:8.0 | 60 秒（首次拉取更久） |
+
+### 4. CI 中无 Docker 环境
+
+所有函数在 Docker 不可用时会返回 `Err`，不会 panic。测试代码应优雅降级：
+
+```mbt
+match pg.start() {
+  Ok(id) => { /* 集成测试 */ }
+  Err(e) => println("skip integration test: " + e)
+  // 测试仍然通过，只是跳过了 Docker 依赖的部分
+}
+```
+
+---
+
+## 当前版本已知限制 (v0.1.0)
+
+| 限制 | 说明 | 计划修复版本 |
+|------|------|:----------:|
+| `start()` / `stop()` 返回 `Err` | 等待 native FFI（C popen + curl）接入 | v0.2.0 |
+| `wait_for_port()` 返回 `Err` | 等待 C socket FFI 接入 | v0.2.0 |
+| `test` 块中无法调用 `now_ms()` | 时间函数需 FFI | v0.2.0 |
+| 仅 Linux native 目标 | 不支持 WASM/JS | v0.1.x |
+| 测试发现机制 | 当前 moon test 可能不识别 `test/` 目录下的测试 | 跟进 moon 版本 |
+
+### 当前可用的 API（纯 MoonBit 层，无需 FFI）
+
+- `DockerContainer::new()` / `.with_port()` / `.with_env()` / `.with_cmd()`
+- `postgres_container()` / `redis_container()` / `mysql_container()`
+- `postgres_connection_string()` / `redis_address()` / `mysql_connection_string()`
+
+这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` 才会真正执行。
+
+---
+
+## 在 MoonBit 项目中使用 moonitest 的完整示例
+
+参见 [examples/](examples/) 目录：
+
+| 示例 | 说明 |
+|------|------|
+| examples/pg-crud/ | 用 PostgreSQL 做 CRUD 集成测试 |
+| examples/redis-cache/ | 测试 Redis 缓存逻辑 |
+| examples/multi-container/ | 同时使用 PG + Redis 测试业务 |
+
+---
+
+## 依赖
+
+| 依赖 | 说明 | 版本要求 |
+|------|------|---------|
+| Docker | 容器运行时 | 20+ |
+| curl | 通过 Unix socket 调用 Docker API | 7.80+ |
+| Linux | Unix socket 和 native 目标支持 | x86_64 / aarch64 |
 
 ## 构建
 
@@ -49,27 +337,6 @@ moon check
 moon build --target native
 moon test
 ```
-
-## 架构
-
-```
-MoonBit .mbt         ← 纯类型编排
-    ↓
-C FFI (native)       ← 系统调用层
-  ├── popen()        → shell 命令执行
-  ├── socket()       → TCP 端口检测
-  ├── gettimeofday() → 毫秒时间戳
-  └── nanosleep()    → 精确休眠
-    ↓
-curl                 → Docker Unix socket API + HTTP
-```
-
-## 依赖
-
-- Linux x86_64 / aarch64
-- Docker daemon (监听 /var/run/docker.sock)
-- curl（Docker API 通信）
-- GCC（编译 C FFI，通常系统自带）
 
 ## 许可
 
