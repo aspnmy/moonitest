@@ -1,8 +1,8 @@
 {
   "name": "moonitest/moonitest",
   "version": "0.1.0",
-  "description": "MoonBit Integration Test Framework — Docker container lifecycle management for integration testing on Linux",
+  "description": "Pure MoonBit integration test framework — Docker container lifecycle management via FFI",
   "license": "Apache-2.0",
   "repository": "http://10.168.3.165:3000/aspnmy/moonitest",
-  "keywords": ["integration-test", "docker", "testcontainers", "testing", "linux"]
+  "keywords": ["integration-test", "docker", "testing", "linux", "native"]
 }

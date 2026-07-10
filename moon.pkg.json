@@ -1,5 +1,13 @@
 {
   "import": [
     "moonbitlang/core"
-  ]
+  ],
+  "link": {
+    "native": {
+      "cc": ["-I/usr/include"],
+      "ld": [],
+      "c-link": ["moonitest_ffi.c"],
+      "exports": []
+    }
+  }
 }
