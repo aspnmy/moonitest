@@ -27,7 +27,7 @@ moonitest 的工作方式：
 ## 安装
 
 ```bash
-moon add moonitest/moonitest
+moon add aspnmy/moonitest
 ```
 
 ## 快速开始
@@ -184,7 +184,7 @@ your-moonbit-project/
 ### 添加依赖
 
 ```bash
-moon add moonitest/moonitest
+moon add aspnmy/moonitest
 ```
 
 ### 编写集成测试
