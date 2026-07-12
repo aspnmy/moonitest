@@ -28,6 +28,28 @@ pub fn with_cmd(self: DockerContainer, cmd: Array[String]) -> DockerContainer {
   { self with cmd }
 }
 
+// --- Public accessors (for testing) ---
+
+/// 获取 Docker 镜像名
+pub fn image(self: DockerContainer) -> String {
+  self.image
+}
+
+/// 获取端口映射列表
+pub fn ports(self: DockerContainer) -> Array[(Int, Int)] {
+  self.ports
+}
+
+/// 获取环境变量列表
+pub fn envs(self: DockerContainer) -> Array[(String, String)] {
+  self.envs
+}
+
+/// 获取容器命令
+pub fn cmd(self: DockerContainer) -> Array[String] {
+  self.cmd
+}
+
 // --- 容器生命周期（通过 curl 调用 Docker Unix socket API） ---
 
 /// 启动容器
