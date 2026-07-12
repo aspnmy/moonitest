@@ -310,6 +310,13 @@ match pg.start() {
 
 这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` / `http_get()` / `http_post()` / `find_free_port()` 才会真正执行。
 
+### v0.1.6 变更日志
+
+| 变更 | 说明 |
+|------|------|
+| 🐳 Docker 交叉编译示例 | README 新增 3 种容器编译方式：快速命令/专用镜像/Gitea Runner CI |
+| 🚀 发布至 mooncakes.io | v0.1.6 已通过 `moon publish` 发布 |
+
 ### v0.1.5 变更日志
 
 | 变更 | 说明 |
