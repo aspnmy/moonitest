@@ -323,7 +323,7 @@ pub fn stop(id: String) -> Result[Unit, String] {
 /// }
 /// ```
 pub fn wait_for_port(host: String, port: Int, timeout_ms: Int) -> Result[Unit, String] {
-  match try tcp_connect(host, port) {
+  match tcp_connect(host, port) {
     Ok(_) => Ok(())
     Err(e) => Err("Port " + port.to_string() + " on " + host + " not ready: " + e)
   }
