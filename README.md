@@ -386,7 +386,7 @@ docker run --rm -v $(pwd):/build moonitest-builder \
 
 ```bash
 docker run --rm -v $(pwd):/build:/build \
-  10.168.3.123:30002/aspnmy/act-runner-ci:baseimage-v3.2.3.0-runner-v4 \
+  ghcr.io/aspnmy/act-runner-ci:baseimage-v3.2.3.0-runner-v4 \
   sh -c "cd /build && moon check && moon build --target native && moon test"
 ```
 
