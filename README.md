@@ -290,7 +290,7 @@ match pg.start() {
 
 ---
 
-## 当前版本已知限制 (v0.1.4)
+## 当前版本已知限制 (v0.1.5)
 
 | 限制 | 说明 | 计划修复版本 |
 |------|------|:----------:|
@@ -309,6 +309,14 @@ match pg.start() {
 - `postgres_connection_string()` / `redis_address()` / `mysql_connection_string()`
 
 这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` / `http_get()` / `http_post()` / `find_free_port()` 才会真正执行。
+
+### v0.1.5 变更日志
+
+| 变更 | 说明 |
+|------|------|
+| 🧪 17 个测试用例 | 覆盖 94% 公开 API：stub/Builder/预设/连接字符串 |
+| 🏗️ 添加 public accessor | `image()` / `ports()` / `envs()` / `cmd()` 供外部验证 |
+| 🐛 修复 `panic()` 用法 | MoonBit 不支持 `panic("msg")`，改为 `println(msg); panic()` |
 
 ### v0.1.4 变更日志
 
