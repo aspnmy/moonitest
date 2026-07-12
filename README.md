@@ -290,12 +290,14 @@ match pg.start() {
 
 ---
 
-## 当前版本已知限制 (v0.1.0)
+## 当前版本已知限制 (v0.1.3)
 
 | 限制 | 说明 | 计划修复版本 |
 |------|------|:----------:|
 | `start()` / `stop()` 返回 `Err` | 等待 native FFI（C popen + curl）接入 | v0.2.0 |
 | `wait_for_port()` 返回 `Err` | 等待 C socket FFI 接入 | v0.2.0 |
+| `find_free_port()` 返回 `Err` | 等待 C socket FFI 接入 | v0.2.0 |
+| `http_get()` / `http_post()` 返回 `Err` | 等待 C socket FFI 接入 | v0.2.0 |
 | `test` 块中无法调用 `now_ms()` | 时间函数需 FFI | v0.2.0 |
 | 仅 Linux native 目标 | 不支持 WASM/JS | v0.1.x |
 | 测试发现机制 | 当前 moon test 可能不识别 `test/` 目录下的测试 | 跟进 moon 版本 |
@@ -306,19 +308,22 @@ match pg.start() {
 - `postgres_container()` / `redis_container()` / `mysql_container()`
 - `postgres_connection_string()` / `redis_address()` / `mysql_connection_string()`
 
-这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` 才会真正执行。
+这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` / `http_get()` / `http_post()` / `find_free_port()` 才会真正执行。
+
+### v0.1.3 变更日志
+
+| 变更 | 说明 |
+|------|------|
+| 🧹 清理重复文件 | 删除 `src/containers/` 目录下与 `src/` 重复的 3 个文件，修复编译失败问题 |
+| 🧹 删除重复测试 | 删除 `src/moonitest_test.mbt`，保留 `test/moonitest_test.mbt` |
+| 📝 完善 `moon.pkg` | 添加显式 `[package]` 配置段 |
+| 🎨 统一错误信息 | 所有 stub 函数错误信息统一为 `"not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)"` |
 
 ---
 
 ## 在 MoonBit 项目中使用 moonitest 的完整示例
 
-参见 [examples/](examples/) 目录：
-
-| 示例 | 说明 |
-|------|------|
-| examples/pg-crud/ | 用 PostgreSQL 做 CRUD 集成测试 |
-| examples/redis-cache/ | 测试 Redis 缓存逻辑 |
-| examples/multi-container/ | 同时使用 PG + Redis 测试业务 |
+待补充 `examples/` 目录（计划 v0.2.0 随 FFI 集成一并提供）：
 
 ---
 
