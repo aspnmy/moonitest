@@ -336,6 +336,57 @@ match pg.start() {
 
 ---
 
+## Docker 容器编译（替代本地 C 编译器）
+
+MoonBit 的 `native` 目标需要 C 编译器链接 `.exe`。如果本地没有 C 编译器，可以用 Docker 容器完成编译。
+
+### 快速编译（一条命令）
+
+```bash
+docker run --rm -v $(pwd):/build -w /build \
+  debian:bullseye-slim sh -c "
+    apt update -qq && apt install -y -qq curl gcc > /dev/null 2>&1 && \
+    curl -fsSL https://cli.moonbitlang.com/install.sh | bash > /dev/null 2>&1 && \
+    export PATH=\$HOME/.moon/bin:\$PATH && \
+    moon check && moon build --target native && moon test
+  "
+```
+
+### 专用编译镜像（推荐，复用缓存）
+
+创建 `moonitest-builder.Dockerfile`：
+
+```dockerfile
+FROM debian:bullseye-slim
+RUN apt update -qq && apt install -y -qq curl gcc && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /root/.moon/bin && \
+    curl -fsSL https://cli.moonbitlang.com/install.sh | bash
+ENV PATH="/root/.moon/bin:${PATH}"
+WORKDIR /build
+```
+
+构建并编译：
+
+```bash
+docker build -t moonitest-builder -f moonitest-builder.Dockerfile .
+docker run --rm -v $(pwd):/build moonitest-builder \
+  sh -c "moon check && moon build --target native && moon test"
+```
+
+### 使用 Gitea Runner CI 镜像
+
+如果已有 Gitea Act Runner 基础设施，也可直接使用预置的 CI 镜像：
+
+```bash
+docker run --rm -v $(pwd):/build:/build \
+  10.168.3.123:30002/aspnmy/act-runner-ci:baseimage-v3.2.3.0-runner-v4 \
+  sh -c "cd /build && moon check && moon build --target native && moon test"
+```
+
+该镜像内置 gcc、Docker CLI、QEMU 多架构支持、MinGW 交叉编译器—详见 [`gitea-runner`](https://git.t2be.cn/aspnmy/gitea-runner)。
+
+---
+
 ## 依赖
 
 | 依赖 | 说明 | 版本要求 |
