@@ -38,33 +38,33 @@ pub fn start(self: DockerContainer) -> Result[String, String] {
 
 /// 停止并删除容器
 pub fn stop(id: String) -> Result[Unit, String] {
-  Err("Docker not available")
+  Err("Docker not available (moonitest requires Linux + Docker + curl)")
 }
 
 // --- 等待策略 ---
 
 /// 等待 TCP 端口开放
 pub fn wait_for_port(host: String, port: Int, timeout_ms: Int) -> Result[Unit, String] {
-  Err("port check requires Linux native target")
+  Err("not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)")
 }
 
 /// 等待 HTTP 200
 pub fn wait_for_http(url: String, timeout_ms: Int) -> Result[Unit, String] {
-  Err("http wait requires Linux native target")
+  Err("not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)")
 }
 
 // --- HTTP 工具 ---
 
 pub fn http_get(url: String) -> Result[String, String] {
-  Err("http_get requires Linux native target")
+  Err("not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)")
 }
 
 pub fn http_post(url: String, body: String) -> Result[String, String] {
-  Err("http_post requires Linux native target")
+  Err("not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)")
 }
 
 // --- 端口工具 ---
 
 pub fn find_free_port() -> Result[Int, String] {
-  Err("find_free_port requires Linux native target")
+  Err("not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)")
 }
