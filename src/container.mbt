@@ -38,15 +38,15 @@ pub fn DockerContainer::new(image: String) -> DockerContainer {
 }
 
 pub fn with_port(self: DockerContainer, host_port: Int, container_port: Int) -> DockerContainer {
-  { self with ports: self.ports + [(host_port, container_port)] }
+  {...self, ports: self.ports + [(host_port, container_port)] }
 }
 
 pub fn with_env(self: DockerContainer, key: String, value: String) -> DockerContainer {
-  { self with envs: self.envs + [(key, value)] }
+  {...self, envs: self.envs + [(key, value)] }
 }
 
 pub fn with_cmd(self: DockerContainer, cmd: Array[String]) -> DockerContainer {
-  { self with cmd }
+  {...self, cmd}
 }
 
 pub fn image(self: DockerContainer) -> String { self.image }
@@ -61,7 +61,8 @@ pub fn cmd(self: DockerContainer) -> Array[String] { self.cmd }
 fn build_container_config(self: DockerContainer) -> String {
   let mut exposed = ""
   let mut port_bindings = ""
-  for (hp, cp) in self.ports {
+  for p in self.ports {
+    let (hp, cp) = p
     let container_port_str = cp.to_string() + "/tcp"
     if exposed != "" { exposed = exposed + "," }
     exposed = exposed + "\"" + container_port_str + "\":{}"
@@ -70,7 +71,8 @@ fn build_container_config(self: DockerContainer) -> String {
   }
   let mut env_arr = "["
   let mut first = true
-  for (k, v) in self.envs {
+  for e in self.envs {
+    let (k, v) = e
     if !first { env_arr = env_arr + "," }
     env_arr = env_arr + "\"" + k + "=" + v + "\""
     first = false
@@ -116,7 +118,7 @@ fn extract_chunked_body(body: String) -> Result[String, String] {
     i = i + 1
     if i < lines.length() {
       if result != "" { result = result + "\n" }
-      result = result + lines[i]
+      result = result + lines[i].to_owned()
     }
     i = i + 1
   }
@@ -150,13 +152,13 @@ fn docker_api_request(method: String, path: String, body: String) -> Result[Stri
   let request = build_http_request(method, path, body)
   let req_bytes = request.to_bytes()
   let req_len = req_bytes.length()
-  let resp_buf = FixedArray::make(65536, 0)
+  let resp_buf: FixedArray[Byte] = FixedArray::make(65536, 0)
   let socket_path_bytes = DOCKER_SOCKET.to_bytes()
   let n = docker_request(socket_path_bytes, req_bytes, req_len, resp_buf, 65536)
   if n < 0 {
     return Err("Docker API request failed (is Docker running? socket: " + DOCKER_SOCKET + ")")
   }
-  let resp_bytes = String::from_array(resp_buf[:n].map(fn(b) { (b: Byte).to_int().to_char() }))
+  let resp_bytes = String::from_array(resp_buf[:n].map(fn(b) { b.to_int().to_char() }))
   if resp_bytes.contains("HTTP/1.1 2") || resp_bytes.contains("HTTP/1.1 201") || resp_bytes.contains("HTTP/1.1 204") {
     extract_json_body(resp_bytes)
   } else {
