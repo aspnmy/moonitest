@@ -1,7 +1,7 @@
 name = "aspnmy/moonitest" 
-version = "0.1.8" 
+version = "0.2.0" 
 readme = "README.md" 
-description = "Pure MoonBit integration test framework - Docker container lifecycle via curl" 
+description = "MoonBit integration test framework - real Docker/TCP/HTTP API via fangyinc/socket + C FFI" 
 license = "Apache-2.0" 
 repository = "https://github.com/aspnmy/moonitest" 
 keywords = ["integration-test", "docker", "testing", "linux", "native"] 
