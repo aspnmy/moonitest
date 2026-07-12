@@ -7,6 +7,9 @@
 // C FFI --- Docker Unix Socket 通信
 // ============================================================
 
+#borrow(socket_path)
+#borrow(req_data)
+#borrow(resp_buf)
 extern "C" fn docker_request(
   socket_path: Bytes, req_data: Bytes, req_len: Int,
   resp_buf: FixedArray[Byte], resp_bufsize: Int
@@ -16,7 +19,7 @@ extern "C" fn docker_request(
 // 常量
 // ============================================================
 
-let DOCKER_SOCKET = "/var/run/docker.sock"
+const DOCKER_SOCKET = "/var/run/docker.sock"
 
 // ============================================================
 // DockerContainer --- 容器配置结构体
