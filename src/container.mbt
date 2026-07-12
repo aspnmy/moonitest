@@ -242,39 +242,20 @@ pub fn stop(id: String) -> Result[Unit, String] {
 // ============================================================
 
 /// 等待 TCP 端口开放
-/// 通过 fangyinc/socket 尝试 TCP 连接
+/// 通过 fangyinc/socket 尝试 TCP 连接（单次检测，timeout 轮询将在后续版本添加）
 pub fn wait_for_port(host: String, port: Int, timeout_ms: Int) -> Result[Unit, String] {
-  let start = now_ms()
-  let deadline = start + timeout_ms
-  let interval = 500  // 每次轮询间隔 500ms
-  
-  while now_ms() < deadline {
-    match try tcp_connect(host, port) {
-      Ok(_) => return Ok(())
-      Err(_) => {
-        // 等待后重试
-        let elapsed = now_ms() - start
-        if elapsed >= timeout_ms { break }
-        let sleep_ms = if interval < deadline - now_ms() { interval } else { deadline - now_ms() }
-        // 忙等待 — MoonBit 无 sleep API
-      }
-    }
+  match try tcp_connect(host, port) {
+    Ok(_) => Ok(())
+    Err(e) => Err("Port " + port.to_string() + " on " + host + " not ready: " + e)
   }
-  Err("Timeout waiting for port " + port.to_string() + " on " + host + " (" + timeout_ms.to_string() + "ms)")
 }
 
-/// 等待 HTTP 200
+/// 等待 HTTP 200（单次检测，timeout 轮询将在后续版本添加）
 pub fn wait_for_http(url: String, timeout_ms: Int) -> Result[Unit, String] {
-  let start = now_ms()
-  let deadline = start + timeout_ms
-  
-  while now_ms() < deadline {
-    match http_get(url) {
-      Ok(_) => return Ok(())
-      Err(_) => { /* 继续等待 */ }
-    }
+  match http_get(url) {
+    Ok(_) => Ok(())
+    Err(e) => Err("HTTP not ready: " + url + " - " + e)
   }
-  Err("Timeout waiting for HTTP 200: " + url)
 }
 
 // ============================================================
@@ -400,26 +381,17 @@ fn parse_host_port(host_port: String, path: String) -> Result[(String, Int, Stri
   }
 }
 
-/// 获取当前时间（毫秒）
-fn now_ms() -> Int {
-  // MoonBit 时间函数 — 需要 FFI 或核心库支持
-  // 简化: 返回 0，timeout 不生效（等待函数的循环会在一次尝试后退出）
-  0
-}
-
 // ============================================================
 // 端口工具
 // ============================================================
 
-/// 查找空闲端口
+/// 查找空闲端口（通过 bind 到端口 0 让 OS 分配，简化返回提示）
 pub fn find_free_port() -> Result[Int, String] {
   try {
     let sock = @socket.Socket::new(@socket.Domain::IPv4, @socket.Type::Stream)!
     sock.bind(@socket.SocketAddr::V4("0.0.0.0", 0))!
     sock.listen()!
-    
-    // 获取实际分配的端口（通过 getsockname）
-    // MoonBit socket 包不提供 getsockname，简化返回 0
+    // 注：getsockname 待 socket 包支持后获取实际端口
     sock.close()!
     Ok(0)
   } catch {
