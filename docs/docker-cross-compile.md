@@ -8,10 +8,10 @@
 
 | 项目 | 值 |
 |:-----|:----|
-| 沙盒 | HK `155.103.156.14:622` |
+| 沙盒 | HK `` |
 | 用户 | `agentuser1`（已授权 `sudo docker` 免密） |
 | 代码路径 | `/home/agentuser1/moonitest` |
-| 镜像 | `git.t2be.cn/aspnmy/gitea-runner:baseimage-v3.2.3.0-runner-v4`（预缓存，2.31GB） |
+| 镜像 | `ghcr.io/aspnmy/act-runner-ci:baseimage-v3.2.3.0-runner-v4` |
 | 容器入口 | `--entrypoint /bin/bash`（s6-overlay 镜像需绕过 `/init`） |
 
 ## 前置条件
