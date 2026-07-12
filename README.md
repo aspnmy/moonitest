@@ -316,7 +316,7 @@ match pg.start() {
 |------|------|
 | 🧹 清理重复文件 | 删除 `src/containers/` 目录下与 `src/` 重复的 3 个文件，修复编译失败问题 |
 | 🧹 删除重复测试 | 删除 `src/moonitest_test.mbt`，保留 `test/moonitest_test.mbt` |
-| 📝 完善 `moon.pkg` | 添加显式 `[package]` 配置段 |
+| 📝 还原 `moon.pkg` | `moon.pkg` 不支持 TOML 格式，还原为空文件 |
 | 🎨 统一错误信息 | 所有 stub 函数错误信息统一为 `"not yet implemented (moonitest requires C socket FFI — planned for v0.2.0)"` |
 
 ---
