@@ -290,7 +290,7 @@ match pg.start() {
 
 ---
 
-## 当前版本已知限制 (v0.1.3)
+## 当前版本已知限制 (v0.1.4)
 
 | 限制 | 说明 | 计划修复版本 |
 |------|------|:----------:|
@@ -310,10 +310,11 @@ match pg.start() {
 
 这些纯类型操作可以正常编译，在 v0.2.0 接入 FFI 后，`start()` / `stop()` / `wait_for_port()` / `http_get()` / `http_post()` / `find_free_port()` 才会真正执行。
 
-### v0.1.3 变更日志
+### v0.1.4 变更日志
 
 | 变更 | 说明 |
 |------|------|
+| 🚀 发布至 mooncakes.io | v0.1.4 已通过 `moon publish` 发布到 mooncakes.io |
 | 🧹 清理重复文件 | 删除 `src/containers/` 目录下与 `src/` 重复的 3 个文件，修复编译失败问题 |
 | 🧹 删除重复测试 | 删除 `src/moonitest_test.mbt`，保留 `test/moonitest_test.mbt` |
 | 📝 还原 `moon.pkg` | `moon.pkg` 不支持 TOML 格式，还原为空文件 |
